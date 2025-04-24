@@ -1,0 +1,10 @@
+langchain
+langchain-google-genai
+langchain-community
+sqlalchemy
+psycopg2-binary
+python-dotenv
+langchainhub
+numexpr
+flask
+gunicorn

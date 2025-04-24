@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>美食智能数据库查询助手</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 添加Markdown解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 添加图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #4a8bfc;
+            --secondary-color: #bb86fc;
+            --success-color: #00c851;
+            --border-color: #333;
+            --user-msg-bg: #2d4b72;
+            --bot-msg-bg: #2a2a2a;
+            --input-bg: #2a2a2a;
+            --danger-color: #ff5252;
+            --modal-bg: rgba(0, 0, 0, 0.85);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .page-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .sidebar-title {
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .db-image-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .db-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .db-image:hover {
+            transform: scale(1.03);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .zoom-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 12px;
+            padding: 5px 8px;
+            border-radius: 4px;
+            opacity: 0.7;
+        }
+        
+        /* API Key 区域样式 */
+        .api-key-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .api-key-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--secondary-color);
+            font-size: 14px;
+        }
+        
+        .api-key-container input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .api-key-container input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        /* 图片模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-bg);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 10;
+        }
+        
+        .modal-button {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-button:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background-color: rgba(220, 53, 69, 0.8);
+            transform: scale(1.1);
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* 使用全视口高度 */
+            box-sizing: border-box; /* 确保padding不增加元素高度 */
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 22px; /* 标题字体缩小 */
+        }
+        
+        .conversation-active {
+            display: none; /* 隐藏对话已激活提示 */
+        }
+        
+        .chat-container {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--card-bg);
+            margin-bottom: 20px;
+            min-height: 200px; /* 减小最小高度 */
+            max-height: unset; /* 删除最大高度限制 */
+        }
+        
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #555;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .empty-chat i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: var(--card-bg);
+        }
+        
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+        }
+        
+        .user-message {
+            background-color: var(--user-msg-bg);
+            padding: 12px 18px;
+            border-radius: 18px 18px 0 18px;
+            margin-bottom: 8px;
+            max-width: 85%;
+            align-self: flex-end;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+        }
+        
+        .bot-message {
+            background-color: var(--bot-msg-bg);
+            padding: 12px 18px;
+            border-radius: 18px 18px 18px 0;
+            margin-bottom: 8px;
+            max-width: 85%;
+            align-self: flex-start;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        /* 对消息中的图片样式进行处理 */
+        .bot-message img {
+            max-width: 250px; /* 缩小图片宽度 */
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .bot-message img:hover {
+            transform: scale(1.02);
+        }
+        
+        /* 新的输入区域样式 */
+        .input-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-field {
+            flex: 1;
+            position: relative;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 139, 252, 0.3);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .submit-btn {
+            background-color: var(--primary-color);
+        }
+        
+        .reset-btn {
+            background-color: var(--danger-color);
+        }
+        
+        .icon-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .icon-button:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+        }
+        
+        .loading-dots span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            margin: 0 3px;
+            animation: loading 1.4s infinite ease-in-out both;
+        }
+        
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1.0);
+            }
+        }
+        
+        .status-message {
+            display: none;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            animation: fadeOut 3s forwards;
+            animation-delay: 2s;
+        }
+        
+        .status-message.success {
+            background-color: rgba(0, 200, 81, 0.2);
+            color: var(--success-color);
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+        
+        /* 消息图片查看器 */
+        .message-image-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .message-image-modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+        }
+        
+        .message-modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .message-modal-img {
+            max-width: 100%;
+            max-height: 90vh;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .message-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 900px) {
+            .page-container {
+                flex-direction: column;
+                height: 100vh; /* 使用全视口高度 */
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 200px; /* 减小侧边栏的最大高度 */
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                flex-shrink: 0; /* 防止侧边栏收缩 */
+            }
+            
+            .main-content {
+                width: 100%;
+                height: auto; /* 在移动端允许自动高度 */
+                flex: 1; /* 主内容占用剩余空间 */
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .chat-container {
+                flex: 1; /* 聊天容器填充可用空间 */
+                min-height: 150px; /* 移动设备上更小的最小高度 */
+            }
+            
+            .user-message, .bot-message {
+                max-width: 90%;
+            }
+            
+            .action-buttons {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 图片查看模态框 -->
+    <div id="imageModal" class="modal">
+        <div class="modal-close" id="modalClose">×</div>
+        <div class="modal-content">
+            <img id="modalImage" class="modal-image" src="" alt="数据库表结构（放大）">
+            <div class="modal-controls">
+                <div class="modal-button" id="zoomIn">+</div>
+                <div class="modal-button" id="zoomOut">-</div>
+                <div class="modal-button" id="resetZoom">↺</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 消息图片查看模态框 -->
+    <div id="messageImageModal" class="message-image-modal">
+        <span class="message-modal-close" id="messageModalClose">&times;</span>
+        <div class="message-modal-content">
+            <img id="messageModalImg" class="message-modal-img" src="">
+        </div>
+    </div>
+
+    <div class="page-container">
+        <aside class="sidebar">
+            <h2 class="sidebar-title">数据库表结构</h2>
+            <div class="db-image-container" id="dbImageContainer">
+                <img src="/static/数据库表.png" alt="数据库表结构" class="db-image" id="dbImage" onerror="this.onerror=null; this.src='/static/placeholder.png';">
+                <div class="zoom-hint">点击放大</div>
+            </div>
+            <div style="text-align: center; font-size: 14px; color: #888; margin-top: 10px;">
+                <br>把你的gemini api key放这儿👇
+            </div>
+            
+            <!-- API Key 移至侧边栏底部 -->
+            <div class="api-key-container">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" name="api_key" placeholder="填入 Google API Key" value="{{ api_key }}">
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <h1>美食智能数据库查询助手</h1>
+            
+            <div class="chat-container" id="chatContainer">
+                {% if conversation_history %}
+                    {% for exchange in conversation_history %}
+                    <div class="message-container">
+                        <div class="user-message">
+                            <strong>你:</strong> {{ exchange.user_input }}
+                        </div>
+                        <div class="bot-message">
+                            <strong>助手:</strong> <span class="markdown-content">{{ exchange.response }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-chat">
+                    <div>👋 欢迎使用美食智能数据库查询助手</div>
+                    <p>开始提问以获取餐厅和美食信息</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="input-container">
+                <form id="queryForm" method="post">
+                    <div class="input-group">
+                        <div class="input-field">
+                            <input type="text" name="user_input" id="userInput" placeholder="输入问题..." required>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="submit" id="submitBtn" class="icon-button submit-btn" title="提交问题">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            <button type="button" id="resetBtn" class="icon-button reset-btn" title="开始新对话">
+                                <i class="fas fa-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <p>请稍等，正在处理...</p>
+                </div>
+                
+                <div class="status-message success" id="statusMessage"></div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('queryForm');
+            const chatContainer = document.getElementById('chatContainer');
+            const userInput = document.getElementById('userInput');
+            const apiKey = document.getElementById('apiKey');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // 图片模态框相关元素
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalClose = document.getElementById('modalClose');
+            const dbImage = document.getElementById('dbImage');
+            const dbImageContainer = document.getElementById('dbImageContainer');
+            const zoomIn = document.getElementById('zoomIn');
+            const zoomOut = document.getElementById('zoomOut');
+            const resetZoom = document.getElementById('resetZoom');
+            
+            // 消息图片模态框相关元素
+            const messageImageModal = document.getElementById('messageImageModal');
+            const messageModalImg = document.getElementById('messageModalImg');
+            const messageModalClose = document.getElementById('messageModalClose');
+            
+            let currentScale = 1;
+            
+            // 渲染现有的Markdown内容
+            function renderMarkdownContent() {
+                document.querySelectorAll('.markdown-content').forEach(function(element) {
+                    // 处理文本中的Markdown
+                    const markdown = element.textContent;
+                    element.innerHTML = marked.parse(markdown);
+                    
+                    // 为消息中的所有图片添加点击事件
+                    element.querySelectorAll('img').forEach(function(img) {
+                        img.addEventListener('click', function() {
+                            messageModalImg.src = this.src;
+                            messageImageModal.classList.add('show');
+                            document.body.style.overflow = 'hidden';
+                        });
+                    });
+                });
+            }
+            
+            // 初始化时渲染现有的Markdown内容
+            renderMarkdownContent();
+            
+            // 关闭消息图片模态框
+            messageModalClose.addEventListener('click', function() {
+                messageImageModal.classList.remove('show');
+                document.body.style.overflow = '';
+            });
+            
+            // 点击消息图片模态框背景关闭
+            messageImageModal.addEventListener('click', function(e) {
+                if (e.target === messageImageModal) {
+                    messageImageModal.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // 打开图片模态框
+            dbImageContainer.addEventListener('click', function() {
+                modalImage.src = dbImage.src;
+                modal.classList.add('show');
+                currentScale = 1;
+                modalImage.style.transform = `scale(${currentScale})`;
+                document.body.style.overflow = 'hidden'; // 防止背景滚动
+            });
+            
+            // 关闭图片模态框
+            modalClose.addEventListener('click', function() {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            });
+            
+            // 点击模态框背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // 放大图片
+            zoomIn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                currentScale += 0.2;
+                if (currentScale > 3) currentScale = 3;
+                modalImage.style.transform = `scale(${currentScale})`;
+            });
+            
+            // 缩小图片
+            zoomOut.addEventListener('click', function(e) {
+                e.stopPropagation();
+                currentScale -= 0.2;
+                if (currentScale < 0.5) currentScale = 0.5;
+                modalImage.style.transform = `scale(${currentScale})`;
+            });
+            
+            // 重置缩放
+            resetZoom.addEventListener('click', function(e) {
+                e.stopPropagation();
+                currentScale = 1;
+                modalImage.style.transform = `scale(${currentScale})`;
+            });
+            
+            // 键盘事件监听
+            document.addEventListener('keydown', function(e) {
+                if (modal.classList.contains('show')) {
+                    if (e.key === 'Escape') {
+                        modal.classList.remove('show');
+                        document.body.style.overflow = '';
+                    } else if (e.key === '+' || e.key === '=') {
+                        currentScale += 0.2;
+                        if (currentScale > 3) currentScale = 3;
+                        modalImage.style.transform = `scale(${currentScale})`;
+                    } else if (e.key === '-') {
+                        currentScale -= 0.2;
+                        if (currentScale < 0.5) currentScale = 0.5;
+                        modalImage.style.transform = `scale(${currentScale})`;
+                    } else if (e.key === 'r') {
+                        currentScale = 1;
+                        modalImage.style.transform = `scale(${currentScale})`;
+                    }
+                } else if (messageImageModal.classList.contains('show') && e.key === 'Escape') {
+                    messageImageModal.classList.remove('show');
+                    document.body.style.overflow = '';
+                } else if (e.key === 'Enter' && !e.shiftKey && document.activeElement === userInput) {
+                    // 按回车发送消息
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+            
+            // Submit question form
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取API Key
+                const apiKeyValue = apiKey.value.trim();
+                if (!apiKeyValue) {
+                    alert('请输入API Key');
+                    apiKey.focus();
+                    return;
+                }
+                
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                
+                // Disable submit button
+                document.getElementById('submitBtn').disabled = true;
+                resetBtn.disabled = true;
+                
+                // Clear any status messages
+                statusMessage.style.display = 'none';
+                
+                // Get form data
+                const formData = new FormData(form);
+                formData.append('api_key', apiKeyValue); // 添加API Key到表单数据
+                
+                // Send AJAX request
+                fetch('/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove empty chat placeholder if present
+                    const emptyChat = chatContainer.querySelector('.empty-chat');
+                    if (emptyChat) {
+                        emptyChat.remove();
+                    }
+                    
+                    // Create new message elements
+                    const messageContainer = document.createElement('div');
+                    messageContainer.className = 'message-container';
+                    
+                    const userMessage = document.createElement('div');
+                    userMessage.className = 'user-message';
+                    userMessage.innerHTML = '<strong>你:</strong> ' + formData.get('user_input');
+                    
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'bot-message';
+                    
+                    // 使用Markdown解析回复内容
+                    const responseContent = document.createElement('span');
+                    responseContent.className = 'markdown-content';
+                    responseContent.textContent = data.response; // 先设置为纯文本
+                    botMessage.innerHTML = '<strong>助手:</strong> ';
+                    botMessage.appendChild(responseContent);
+                    
+                    // Add messages to container
+                    messageContainer.appendChild(userMessage);
+                    messageContainer.appendChild(botMessage);
+                    chatContainer.appendChild(messageContainer);
+                    
+                    // 渲染Markdown内容
+                    const markdownContent = responseContent.textContent;
+                    responseContent.innerHTML = marked.parse(markdownContent);
+                    
+                    // 为新添加的图片添加点击事件
+                    responseContent.querySelectorAll('img').forEach(function(img) {
+                        img.addEventListener('click', function() {
+                            messageModalImg.src = this.src;
+                            messageImageModal.classList.add('show');
+                            document.body.style.overflow = 'hidden';
+                        });
+                    });
+                    
+                    // Scroll to bottom
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    // Clear input field
+                    userInput.value = '';
+                    
+                    // Hide loading indicator
+                    loadingIndicator.style.display = 'none';
+                    
+                    // Re-enable buttons
+                    document.getElementById('submitBtn').disabled = false;
+                    resetBtn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingIndicator.style.display = 'none';
+                    document.getElementById('submitBtn').disabled = false;
+                    resetBtn.disabled = false;
+                    alert('发生错误，请重试!');
+                });
+            });
+            
+            // Reset conversation button
+            resetBtn.addEventListener('click', function() {
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                
+                // Disable buttons
+                document.getElementById('submitBtn').disabled = true;
+                resetBtn.disabled = true;
+                
+                // Send reset request
+                fetch('/reset_conversation', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear chat container
+                        chatContainer.innerHTML = `
+                            <div class="empty-chat">
+                                <div>👋 欢迎使用美食智能数据库查询助手</div>
+                                <p>开始提问以获取餐厅和美食信息</p>
+                            </div>
+                        `;
+                        
+                        // Show success message
+                        statusMessage.textContent = data.message;
+                        statusMessage.style.display = 'block';
+                        
+                        // Reset animation
+                        statusMessage.style.animation = 'none';
+                        setTimeout(function() {
+                            statusMessage.style.animation = 'fadeOut 3s forwards';
+                            statusMessage.style.animationDelay = '2s';
+                        }, 10);
+                    }
+                    
+                    // Hide loading indicator
+                    loadingIndicator.style.display = 'none';
+                    
+                    // Re-enable buttons
+                    document.getElementById('submitBtn').disabled = false;
+                    resetBtn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingIndicator.style.display = 'none';
+                    document.getElementById('submitBtn').disabled = false;
+                    resetBtn.disabled = false;
+                    alert('重置对话时发生错误，请重试!');
+                });
+            });
+            
+            // 对Enter键的处理，按Enter发送消息
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+            
+            // Scroll to bottom of chat on page load
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
+    </script>
+</body>
+</html>
