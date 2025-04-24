@@ -577,7 +577,7 @@
             <!-- API Key 移至侧边栏底部 -->
             <div class="api-key-container">
                 <label for="apiKey">API Key:</label>
-                <input type="text" id="apiKey" name="api_key" placeholder="填入 Google API Key" value="{{ api_key }}">
+                <input type="password" id="apiKey" name="api_key" placeholder="填入 Google API Key" value="{{ api_key }}">
             </div>
         </aside>
         
@@ -661,6 +661,14 @@
             const messageModalClose = document.getElementById('messageModalClose');
             
             let currentScale = 1;
+            
+            // 检查是否之前已输入过API密钥
+            if (localStorage.getItem('apiKeyEntered') === 'true') {
+                // 如果之前输入过API密钥，显示一个星号提示
+                if (apiKey.value === '') {
+                    apiKey.placeholder = '已保存API Key状态 (请重新输入)';
+                }
+            }
             
             // 渲染现有的Markdown内容
             function renderMarkdownContent() {
@@ -764,22 +772,26 @@
                 } else if (messageImageModal.classList.contains('show') && e.key === 'Escape') {
                     messageImageModal.classList.remove('show');
                     document.body.style.overflow = '';
-                } else if (e.key === 'Enter' && !e.shiftKey && document.activeElement === userInput) {
-                    // 按回车发送消息
-                    e.preventDefault();
-                    form.dispatchEvent(new Event('submit'));
                 }
             });
             
             // Submit question form
+            let isSubmitting = false; // 添加提交状态标志
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // 防止重复提交
+                if (isSubmitting) {
+                    return;
+                }
+                isSubmitting = true;
                 
                 // 获取API Key
                 const apiKeyValue = apiKey.value.trim();
                 if (!apiKeyValue) {
                     alert('请输入API Key');
                     apiKey.focus();
+                    isSubmitting = false;
                     return;
                 }
                 
@@ -796,6 +808,9 @@
                 // Get form data
                 const formData = new FormData(form);
                 formData.append('api_key', apiKeyValue); // 添加API Key到表单数据
+                
+                // 保存API密钥到localStorage
+                localStorage.setItem('apiKeyEntered', 'true'); // 只存储状态，不存储实际的密钥
                 
                 // Send AJAX request
                 fetch('/', {
@@ -861,6 +876,9 @@
                     // Re-enable buttons
                     document.getElementById('submitBtn').disabled = false;
                     resetBtn.disabled = false;
+                    
+                    // 恢复提交状态
+                    isSubmitting = false;
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -868,6 +886,7 @@
                     document.getElementById('submitBtn').disabled = false;
                     resetBtn.disabled = false;
                     alert('发生错误，请重试!');
+                    isSubmitting = false;
                 });
             });
             
@@ -926,9 +945,10 @@
                 });
             });
             
-            // 对Enter键的处理，按Enter发送消息
+            // 改进对Enter键的处理，考虑中文输入法
             userInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                // 检查是否正在使用输入法
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
                     e.preventDefault();
                     form.dispatchEvent(new Event('submit'));
                 }

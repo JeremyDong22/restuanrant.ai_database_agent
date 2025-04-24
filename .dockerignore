@@ -1,0 +1,53 @@
+# .dockerignore file for DB Agent application
+# Created: Current date
+# Author: Claude 3.7 Sonnet
+# Description: Specifies files and directories to exclude from Docker build context
+
+# Version control
+.git
+.gitignore
+
+# Development files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Mac OS files
+.DS_Store
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Log files
+*.log
+
+# Local database files
+*.db
+*.sqlite3
+
+# Build files
+build/
+dist/ 

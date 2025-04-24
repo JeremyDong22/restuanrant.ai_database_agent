@@ -20,7 +20,7 @@ MEMORY_TTL = 3600  # 1 hour
 
 # Prompt
 react_prompt_str_with_history = """
-Answer the following questions as best you can. 
+Answer the following questions as best you can, do not make up any information. 
 **Your final answer must always be in Chinese.** 
 You have access to the following tools:
 {tools}
@@ -100,7 +100,7 @@ def run_agent_with_key(user_input: str, google_api_key: str, session_id: str = N
             conversation_memories[session_id]['last_access'] = datetime.now()
         else:
             # Create new memory
-            memory = ConversationBufferWindowMemory(k=5, memory_key="chat_history", return_messages=False)
+            memory = ConversationBufferWindowMemory(k=7, memory_key="chat_history", return_messages=False)
             if session_id:
                 conversation_memories[session_id] = {
                     'memory': memory,
