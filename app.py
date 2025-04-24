@@ -1,12 +1,26 @@
 # 更新日期: 当前
 # 作者: Claude 3.7 Sonnet
-# 描述: 修改app.py以适应生产环境部署，添加从环境变量获取端口的逻辑
+# 描述: 修改app.py以适应生产环境部署，添加从环境变量获取端口的逻辑，增加调试信息
 
 from flask import Flask, render_template, request, session, jsonify, redirect, url_for
-from agent_core import run_agent_with_key
 import uuid
 import secrets
 import os
+import sys
+
+# 调试信息：打印环境变量和系统信息
+print(f"Python version: {sys.version}")
+print(f"SUPABASE_DB_URI 是否存在: {'是' if os.getenv('SUPABASE_DB_URI') else '否'}")
+if os.getenv('SUPABASE_DB_URI'):
+    # 只打印URI的前10个字符，避免泄露敏感信息
+    print(f"SUPABASE_DB_URI前缀: {os.getenv('SUPABASE_DB_URI')[:10]}...")
+
+# 在导入agent_core前先打印调试信息
+try:
+    from agent_core import run_agent_with_key
+    print("成功导入agent_core")
+except Exception as e:
+    print(f"导入agent_core失败: {e}")
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 app.secret_key = secrets.token_hex(16)  # Needed for session management
