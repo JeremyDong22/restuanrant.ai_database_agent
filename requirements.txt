@@ -1,3 +1,4 @@
+# Updated: Add flask-cors for API usage
 langchain
 langchain-google-genai
 langchain-community
@@ -8,3 +9,4 @@ langchainhub
 numexpr
 flask
 gunicorn
+flask-cors
